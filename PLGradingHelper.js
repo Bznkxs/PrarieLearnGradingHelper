@@ -1,0 +1,343 @@
+// ==UserScript==
+// @name         PLGradingHelper
+// @namespace    http://tampermonkey.net/
+// @version      2024-02-07
+// @description  Usage: This script makes copying rubrics easier. Navigate to the grading page containing your desired rubric. In the Rubric dialog, click on "Copy Rubric" to copy the rubric. Navigate to the grading page where you wish to apply the rubric. In the Rubric dialog, press "Ctrl+V" to paste the rubric. Don't forget to click "Save rubric".
+// @author       Yufeng Du
+// @match        https://us.prairielearn.com/pl/course_instance/*/instructor/assessment/*/manual_grading/instance_question/*
+// @icon         https://us.prairielearn.com/favicon.ico
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    console.log("Hello world!");
+    let modal = document.querySelector('.modal');
+    let modalContent = document.querySelector('.modal-content');
+    // find the first div with class 'modal-body'
+    let modalBody = document.querySelector('.modal-body');
+    // create a new div inside the modal header to hold the "Copy" button
+    let ButtonDiv = document.createElement('div');
+    // create a new button inside the new div
+    let copyButton = document.createElement('div');
+    // add the classes 'btn' 'btn-light' to the new button
+    // newButton.classList.add('btn', 'btn-sm', 'btn-secondary', 'js-add-rubric-item-button');
+    // add the text "Copy" to the new button
+    copyButton.textContent = 'Copy Rubric';
+    // set the width to auto
+    copyButton.style.width = 'auto';
+    copyButton.style.color = 'red';
+    copyButton.style.cursor = 'pointer';
+    copyButton.style.textDecoration = 'underline';
+
+    copyButton.style.display = "inline-block";
+    // append the new button to the new div
+    ButtonDiv.appendChild(copyButton);
+    // insert a space
+    let space = document.createElement('div');
+    space.textContent = ' ';
+    space.style.display = "inline-block";
+    space.style.width = "10px";
+    ButtonDiv.appendChild(space);
+
+    let pastePseudoButton = document.createElement('div');
+    let col6 = modalBody.querySelector('.col-6');
+    // add the classes 'btn' 'btn-light' to the new button
+    // newButton.classList.add('btn', 'btn-sm', 'btn-secondary', 'js-add-rubric-item-button');
+    // add the text "Copy" to the new button
+    pastePseudoButton.textContent = 'Paste Rubric (Ctrl+V)';
+    // set the width to auto
+    pastePseudoButton.style.width = 'auto';
+    pastePseudoButton.style.color = '#888888';
+
+    pastePseudoButton.style.display = "inline-block";
+    // append the new button to the new div
+    ButtonDiv.appendChild(pastePseudoButton);
+
+    // insert help button
+    let divHTML = `
+    <button type="button" class="btn btn-sm" data-toggle="tooltip" data-placement="bottom" title="" data-original-title='Click on "Copy Rubric" to copy the rubric. Press "Ctrl+V" to paste the rubric. Click this information button for details.'>
+                      <svg class="svg-inline--fa fa-circle-info text-info" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="circle-info" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"></path></svg><!-- <i class="text-info fas fa-circle-info"></i> Font Awesome fontawesome.com -->
+                    </button>
+                    `;
+    // create a new button inside the new div
+    let helpButton = document.createElement('div');
+    helpButton.style.display = "inline-block";
+    helpButton.innerHTML = divHTML;
+    ButtonDiv.appendChild(helpButton);
+
+    // insert the new div
+    modalBody.insertBefore(ButtonDiv, modalBody.firstChild);
+
+    // create a function to parse the data from the modal body
+    function getParsedData() {
+        // find the first "col-6" div inside modalBody
+
+        // there are two checkboxes inside col6. Get these two checkboxes
+        let checkboxes = col6.querySelectorAll('input');
+        // create an array to hold the values of the checkboxes. Look at the "checked" property of each checkbox.
+        let checkboxValues = 0;
+        for (let i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].checked === false) {
+                checkboxValues = checkboxValues * 2;
+            } else {
+                checkboxValues = checkboxValues * 2 + 1;
+            }
+        }
+        let minPoints = modalBody.querySelector('input[name="min_points"]').value;
+        let maxExtraPoints = modalBody.querySelector('input[name="max_extra_points"]').value;
+
+        let rubricItemTable = modalBody.querySelector('.js-rubric-items-table');
+        let rubricItemRows = rubricItemTable.querySelectorAll('tr');
+        let rubricItemData = [];
+        for (let i = 1; i < rubricItemRows.length; i++) {
+            let rubricItemRow = rubricItemRows[i];
+            if (rubricItemRow.classList.contains('js-no-rubric-item-note')) {
+                continue;
+            }
+            let rubricItemCells = rubricItemRow.querySelectorAll('td');
+            if (rubricItemCells.length < 6) {
+                continue;
+            }
+            function getTextContent(element) {
+                // if first child is a label tag, return the data-current-value
+                let secondChild = element.firstChild.nextSibling;
+                if (secondChild.tagName === "LABEL") {
+                    return secondChild.getAttribute('data-current-value');
+                } else {
+                    return secondChild.innerHTML;
+                }
+            }
+            let rubricItem = {
+                "points": rubricItemCells[1].querySelector('input').value,
+                "description": rubricItemCells[2].querySelector('input').value,
+                "detailedExplanation": getTextContent(rubricItemCells[3]),
+                "graderNote": getTextContent(rubricItemCells[4]),
+                "showToStudents": rubricItemCells[5].querySelector('input').checked ? "always" : "ifSelected",
+            };
+            rubricItemData.push(rubricItem);
+        }
+
+        let ret_json = {
+            "checkboxValues": checkboxValues,
+            "minimumRubricScore": minPoints,
+            "maximumExtraCredit": maxExtraPoints,
+            "rubricItems": rubricItemData
+        };
+        return JSON.stringify(ret_json);
+    }
+    function restoreParsedData(ret_json_string) {
+        // update the rubric settings with the parsed data
+
+        let ret_json;
+        try {
+            ret_json = JSON.parse(ret_json_string);
+        } catch {
+            return false;
+        }
+        let checkboxValues = ret_json.checkboxValues;
+        let minPoints = ret_json.minimumRubricScore;
+        let maxExtraPoints = ret_json.maximumExtraCredit;
+        let rubricItemData = ret_json.rubricItems;
+        // check the validity of the parsed data
+        if (checkboxValues !== 1 && checkboxValues !== 2) {
+            console.log("Invalid checkboxValues: " + checkboxValues);
+            return false;
+        }
+        // check if minPoints and maxExtraPoints are integers
+        if (isNaN(minPoints)) {
+            console.log("Invalid minPoints: " + minPoints);
+            return false;
+        }
+        if (isNaN(maxExtraPoints)) {
+            console.log("Invalid maxExtraPoints: " + maxExtraPoints);
+            return false;
+        }
+        // check each rubric item
+        for (let i = 0; i < rubricItemData.length; i++) {
+            let rubricItem = rubricItemData[i];
+            if (isNaN(rubricItem.points)) {
+                console.log("Invalid rubricItem.points: " + rubricItem.points);
+                return false;
+            }
+            // if rubricItem.description is not a string, return
+            if (typeof rubricItem.description !== "string") {
+                console.log("Invalid rubricItem.description: " + rubricItem.description);
+                return false;
+            }
+            // if rubricItem.detailedExplanation is not a string, return
+            if (typeof rubricItem.detailedExplanation !== "string") {
+                console.log("Invalid rubricItem.detailedExplanation: " + rubricItem.detailedExplanation);
+                return false;
+            }
+            // if rubricItem.graderNote is not a string, return
+            if (typeof rubricItem.graderNote !== "string") {
+                console.log("Invalid rubricItem.graderNote: " + rubricItem.graderNote);
+                return false;
+            }
+            // if rubricItem.showToStudents is not one of the two strings, return
+            if (rubricItem.showToStudents !== "always" && rubricItem.showToStudents !== "ifSelected") {
+                console.log("Invalid rubricItem.showToStudents: " + rubricItem.showToStudents);
+                return false;
+            }
+        }
+        console.log("Validation passed");
+        // update the checkboxes
+        let checkboxes = col6.querySelectorAll('input');
+        console.log(checkboxes);
+        if (checkboxValues === 1) {
+            checkboxes[1].checked = true;
+        }
+        if (checkboxValues === 2) {
+            checkboxes[0].checked = true;
+        }
+        // update the minPoints and maxExtraPoints
+        modalBody.querySelector('input[name="min_points"]').value = +minPoints;
+        modalBody.querySelector('input[name="max_extra_points"]').value = +maxExtraPoints;
+        // update the rubric items
+        let rubricItemTable = modalBody.querySelector('.js-rubric-items-table');
+        let rubricItemBody = rubricItemTable.querySelector('tbody');
+        let rubricItemRows = rubricItemBody.querySelectorAll('tr');
+        while (rubricItemRows.length > 0) {
+            let deleteButton = rubricItemRows[0].querySelector('.js-rubric-item-delete');
+            console.log(rubricItemRows[0]);
+            console.log(deleteButton);
+            if (deleteButton) {
+                deleteButton.click();
+                rubricItemRows = rubricItemBody.querySelectorAll('tr');
+            } else {
+                break;
+            }
+        }
+        let addRubricItemButton = modalBody.querySelector('.js-add-rubric-item-button');
+        for (let i = 0; i < rubricItemData.length; i++) {
+            addRubricItemButton.click();
+        }
+        rubricItemRows = rubricItemBody.querySelectorAll('tr');
+        console.log("RBRBDY");
+        console.log(rubricItemBody);
+        console.log("RUBRICITEMROWS");
+        console.log(rubricItemRows);
+        let _j = 0;
+        for (let i = 0; i < rubricItemRows.length; i++) {
+            console.log("ITEM", i);
+            let rubricItem = rubricItemData[_j];
+            let rubricItemCells = rubricItemRows[i].querySelectorAll('td');
+            console.log(rubricItemCells);
+            if (rubricItemCells.length < 6) {
+                continue;
+            }
+            rubricItemCells[1].querySelector('input').value = +rubricItem.points;
+            rubricItemCells[2].querySelector('input').value = rubricItem.description;
+            let modifyDetailedExplanationButton = rubricItemCells[3].querySelector('button');
+            modifyDetailedExplanationButton.click();
+            rubricItemCells[3].querySelector('textarea').value = rubricItem.detailedExplanation;
+            let modifyGraderNoteButton = rubricItemCells[4].querySelector('button');
+            modifyGraderNoteButton.click();
+            rubricItemCells[4].querySelector('textarea').value = rubricItem.graderNote;
+            if (rubricItem.showToStudents === "always") {
+                rubricItemCells[5].querySelectorAll('input')[0].checked = true;
+            }
+            else {
+                rubricItemCells[5].querySelectorAll('input')[1].checked = true;
+            }
+            _j = _j + 1;
+        }
+        return true;
+    }
+
+    function popup(Button, popupText) {
+        let absolutePos = Button.getBoundingClientRect();
+        let width = Button.offsetWidth;
+        let height = Button.offsetHeight;
+// get absolute position of the modal
+        let modalPos = modalBody.getBoundingClientRect();
+// get the relative position of the button
+        let relativePos = {
+            x: absolutePos.x - modalPos.x + width,
+            y: absolutePos.y - modalPos.y - height / 2
+        };
+        let divtext = "<div class=\"popover fade bs-popover-right show\" role=\"tooltip\" id=\"popover687467\" " +
+            "x-placement=\"right\" style=\"position: absolute; transform: translate3d(" + relativePos.x + "px, " +
+            relativePos.y + "px, 0px); top: 0px; left: 0px; will-change: transform;\"><div class=\"arrow\" styl" +
+            "e=\"top: 6px;\"></div><h3 class=\"popover-header\"></h3><div class=\"popover-body\">" + popupText + "</div></div>";
+// create a new div that lasts for 3 seconds
+        let popup = document.createElement('div');
+        let styles = document.createElement('style');
+        styles.innerHTML = ".BtnPopupFadeOut {opacity: 0; animation: btnPopupFadeOut 1s;}\n@keyframes btnPopupFadeOut {0% {opacity: 1;} 50% {opacity: 1;}  100% {opacity: 0;}}\n";
+        document.head.appendChild(styles);
+        popup.classList.add('BtnPopupFadeOut');
+        popup.innerHTML = divtext;
+// append the new div to the body
+        ButtonDiv.appendChild(popup);
+        setTimeout(function() {
+            popup.remove();
+        }, 1300);
+    }
+// call getParsedData() when the new button is clicked and copy the result to the clipboard
+    copyButton.addEventListener('click', function() {
+        let parsedData = getParsedData();
+        navigator.clipboard.writeText(parsedData).then((e)=>{
+            console.log("DUMP DATA");
+            console.log(parsedData);
+// get absolute position of the button
+            popup(copyButton, "Copied!");
+        });
+    });
+
+    document.addEventListener("paste", (event) => {
+        if (modal.style.display !== "none") {
+            if (event.target.tagName === "TEXTAREA" || event.target.tagName === "INPUT") {
+                return;
+            }
+
+            let parsedData;
+            try {
+                parsedData = (event.clipboardData || window.clipboardData).getData("text");
+            } catch {
+                return;
+            };
+
+            let response = restoreParsedData(parsedData);
+            console.log("LOAD DATA");
+            console.log(parsedData);
+            // get absolute position of the button
+            if (response) {
+                popup(pastePseudoButton, "Pasted!");
+                event.stopPropagation();
+            } else {
+                popup(pastePseudoButton, "Invalid data from clipboard!");
+            }
+        }
+    }, false);
+    pastePseudoButton.addEventListener('click', function() {
+        popup(pastePseudoButton, "Press Ctrl+V!");
+    });
+    helpButton.addEventListener('click', function() {
+        // create a dialog box with a close button
+        let dialog = document.createElement('dialog');
+        dialog.innerHTML = "<div>" +
+            "<h2>What do the buttons do</h2>" +
+            "<p>These buttons make copying rubrics easier. The original process of creating rubric by hand is tiring. With this script, you can copy the rubric from one question, and apply it to another question within just a few steps. </p>" +
+            "<h2>How to use this script</h2>" +
+            "<p>1. Navigate to the grading page containing your desired rubric. </p>" +
+            "<p>2. In the Rubric dialog, click on \"Copy Rubric\" to copy the rubric. </p>" +
+            "<p>3. Navigate to the grading page where you wish to apply the rubric.  </p>" +
+            "<p>4. In the Rubric dialog, press \"Ctrl+V\" to paste the rubric. </p>" +
+            "<p>5. Don't forget to click \"Save rubric\".</p>" +
+            "<h2>What is done during this process</h2>" +
+            "<p>The script will copy the rubric to the clipboard in JSON. You can view and modify the copied string in a text editor before pasting back to the question. When Ctrl+V is pressed, the script will validate the JSON string first. If everything is correct, the script will add the rubric as described in the JSON string.</p>" +
+            "</div>";
+        let closeButton = document.createElement('button');
+        closeButton.innerHTML = "Close";
+        closeButton.addEventListener('click', function() {
+                dialog.close();
+
+            }
+        );
+        dialog.appendChild(closeButton);
+        document.body.appendChild(dialog);
+        dialog.showModal();
+
+    }); 
+})();
