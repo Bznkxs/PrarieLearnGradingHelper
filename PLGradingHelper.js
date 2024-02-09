@@ -1,17 +1,19 @@
 // ==UserScript==
 // @name         PLGradingHelper
 // @namespace    http://tampermonkey.net/
-// @version      2024-02-07
+// @version      2024-02-08
 // @description  Usage: This script makes copying rubrics easier. Navigate to the grading page containing your desired rubric. In the Rubric dialog, click on "Copy Rubric" to copy the rubric. Navigate to the grading page where you wish to apply the rubric. In the Rubric dialog, press "Ctrl+V" to paste the rubric. Don't forget to click "Save rubric".
 // @author       Yufeng Du
 // @match        https://us.prairielearn.com/pl/course_instance/*/instructor/assessment/*/manual_grading/instance_question/*
 // @icon         https://us.prairielearn.com/favicon.ico
 // @grant        none
+// @license      MIT
+// @downloadURL https://update.greasyfork.org/scripts/486929/PLGradingHelper.user.js
+// @updateURL https://update.greasyfork.org/scripts/486929/PLGradingHelper.meta.js
 // ==/UserScript==
 
 (function() {
-    'use strict';
-    console.log("Hello world!");
+    'use strict'; 
     let modal = document.querySelector('.modal');
     let modalContent = document.querySelector('.modal-content');
     // find the first div with class 'modal-body'
@@ -183,8 +185,7 @@
         }
         console.log("Validation passed");
         // update the checkboxes
-        let checkboxes = col6.querySelectorAll('input');
-        console.log(checkboxes);
+        let checkboxes = col6.querySelectorAll('input'); 
         if (checkboxValues === 1) {
             checkboxes[1].checked = true;
         }
@@ -198,32 +199,25 @@
         let rubricItemTable = modalBody.querySelector('.js-rubric-items-table');
         let rubricItemBody = rubricItemTable.querySelector('tbody');
         let rubricItemRows = rubricItemBody.querySelectorAll('tr');
-        while (rubricItemRows.length > 0) {
-            let deleteButton = rubricItemRows[0].querySelector('.js-rubric-item-delete');
-            console.log(rubricItemRows[0]);
-            console.log(deleteButton);
+        let _j = 0;
+        while (rubricItemRows.length > _j) {
+            let deleteButton = rubricItemRows[_j].querySelector('.js-rubric-item-delete'); 
             if (deleteButton) {
                 deleteButton.click();
                 rubricItemRows = rubricItemBody.querySelectorAll('tr');
             } else {
-                break;
+                _j += 1;
             }
         }
         let addRubricItemButton = modalBody.querySelector('.js-add-rubric-item-button');
         for (let i = 0; i < rubricItemData.length; i++) {
             addRubricItemButton.click();
         }
-        rubricItemRows = rubricItemBody.querySelectorAll('tr');
-        console.log("RBRBDY");
-        console.log(rubricItemBody);
-        console.log("RUBRICITEMROWS");
-        console.log(rubricItemRows);
-        let _j = 0;
-        for (let i = 0; i < rubricItemRows.length; i++) {
-            console.log("ITEM", i);
+        rubricItemRows = rubricItemBody.querySelectorAll('tr'); 
+        _j = 0;
+        for (let i = 0; i < rubricItemRows.length; i++) { 
             let rubricItem = rubricItemData[_j];
-            let rubricItemCells = rubricItemRows[i].querySelectorAll('td');
-            console.log(rubricItemCells);
+            let rubricItemCells = rubricItemRows[i].querySelectorAll('td'); 
             if (rubricItemCells.length < 6) {
                 continue;
             }
@@ -304,7 +298,7 @@
             // get absolute position of the button
             if (response) {
                 popup(pastePseudoButton, "Pasted!");
-                event.stopPropagation();
+                event.preventDefault();
             } else {
                 popup(pastePseudoButton, "Invalid data from clipboard!");
             }
