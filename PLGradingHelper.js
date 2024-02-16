@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PLGradingHelper
 // @namespace    http://tampermonkey.net/
-// @version      2024-02-08
+// @version      2024-02-15
 // @description  Usage: This script makes copying rubrics easier. Navigate to the grading page containing your desired rubric. In the Rubric dialog, click on "Copy Rubric" to copy the rubric. Navigate to the grading page where you wish to apply the rubric. In the Rubric dialog, press "Ctrl+V" to paste the rubric. Don't forget to click "Save rubric".
 // @author       Yufeng Du
 // @match        https://us.prairielearn.com/pl/course_instance/*/instructor/assessment/*/manual_grading/instance_question/*
