@@ -333,5 +333,72 @@
         document.body.appendChild(dialog);
         dialog.showModal();
 
-    }); 
+    });
+
+    // Graded instance counter
+    // get username
+    let usernameNavBar = document.getElementById("navbarDropdown");
+    let span = usernameNavBar.querySelector("span");
+    // username = usernameNavBar.innerText - span.innerText
+    let username = usernameNavBar.innerText.replace(span.innerText, "").trim();
+    // get div with class "js-main-grading-panel"
+    let mainGradingPanel = document.querySelector(".js-main-grading-panel");
+    // get li with class "list-group-item" "d-flex" and "align-items-center" from mainGradingPanel
+    let listGroupItem = mainGradingPanel.querySelectorAll(".list-group-item.d-flex.align-items-center");
+    // find the li that contains <a> with class "btn btn-primary", role "button"
+    let backButton;
+    for (let i = 0; i < listGroupItem.length; i++) {
+        let button = listGroupItem[i].querySelector("a.btn.btn-primary");
+        if (button) {
+            backButton = button;
+            break;
+        }
+    }
+    // get href from the button
+    let href = backButton.getAttribute("href");
+    // get the html content from the href
+    function getQuestionName(data) {
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(data, "text/html");
+
+        // get question name from div class="card-header bg-primary text-white", child of div class="card mb-4", child of main id="content"
+        let docMainContent = doc.getElementById("content");
+        let card = docMainContent.querySelector(".card.mb-4");
+        let questionNameHeader = card.querySelector(".card-header.bg-primary.text-white");
+        let questionName = questionNameHeader.innerText.trim();
+        console.log(questionName);
+        return questionName;
+    }
+    function appendGradedInstanceCounter(questionName, gradedInstanceCounter, totalInstances) {
+        console.log("appendGradedInstanceCounter");
+        // look at document for the div with class "card-header bg-info text-white"
+        let mainContent = document.getElementById("content");
+        let sideBar = mainContent.querySelector(".col-lg-4.col-12");
+        let cardHeader = sideBar.querySelector(".card-header.bg-info.text-white");
+        // create a new div with class "text-white"
+        let div = document.createElement("div");
+        div.classList.add("text-white");
+        // add the gradedInstanceCounter to the div
+        div.innerHTML = gradedInstanceCounter + "/" + totalInstances + " Graded by you for " + questionName;
+        // append the new div to the cardHeader
+        cardHeader.appendChild(div);
+        console.log(div);
+    }
+    let instancesJsonURL = href + "/instances.json";
+    fetch(instancesJsonURL).then(response => response.json()).then(data => {
+        let gradedInstanceCounter = 0;
+        for (let i = 0; i < data.instance_questions.length; i++) {
+            let instance = data.instance_questions[i];
+            if (instance.last_grader_name === username) {
+                gradedInstanceCounter++;
+            }
+        }
+        let totalInstances = data.instance_questions.length;
+        console.log(gradedInstanceCounter);
+        fetch(href).then(response => response.text()).then(data => {
+            let questionName = getQuestionName(data);
+            appendGradedInstanceCounter(questionName, gradedInstanceCounter, totalInstances);
+        });
+    })
+
 })();
