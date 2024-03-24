@@ -144,16 +144,19 @@
         // check the validity of the parsed data
         if (checkboxValues !== 1 && checkboxValues !== 2) {
             console.log("Invalid checkboxValues: " + checkboxValues);
-            return false;
+            checkboxValues = 2;  // default to positive grading
+            // return false;
         }
         // check if minPoints and maxExtraPoints are integers
         if (isNaN(minPoints)) {
             console.log("Invalid minPoints: " + minPoints);
-            return false;
+            minPoints = 0;  // default
+            // return false;
         }
         if (isNaN(maxExtraPoints)) {
             console.log("Invalid maxExtraPoints: " + maxExtraPoints);
-            return false;
+            maxExtraPoints = 0; // default
+            // return false;
         }
         // check each rubric item
         for (let i = 0; i < rubricItemData.length; i++) {
