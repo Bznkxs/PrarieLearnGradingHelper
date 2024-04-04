@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PLGradingHelper
 // @namespace    http://tampermonkey.net/
-// @version      2024-02-15
+// @version      2024-04-04
 // @description  Usage: This script makes copying rubrics easier. Navigate to the grading page containing your desired rubric. In the Rubric dialog, click on "Copy Rubric" to copy the rubric. Navigate to the grading page where you wish to apply the rubric. In the Rubric dialog, press "Ctrl+V" to paste the rubric. Don't forget to click "Save rubric".
 // @author       Yufeng Du
 // @match        https://us.prairielearn.com/pl/course_instance/*/instructor/assessment/*/manual_grading/instance_question/*
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 (function() {
-    'use strict'; 
+    'use strict';
     let modal = document.querySelector('.modal');
     let modalContent = document.querySelector('.modal-content');
     // find the first div with class 'modal-body'
@@ -188,7 +188,7 @@
         }
         console.log("Validation passed");
         // update the checkboxes
-        let checkboxes = col6.querySelectorAll('input'); 
+        let checkboxes = col6.querySelectorAll('input');
         if (checkboxValues === 1) {
             checkboxes[1].checked = true;
         }
@@ -204,7 +204,7 @@
         let rubricItemRows = rubricItemBody.querySelectorAll('tr');
         let _j = 0;
         while (rubricItemRows.length > _j) {
-            let deleteButton = rubricItemRows[_j].querySelector('.js-rubric-item-delete'); 
+            let deleteButton = rubricItemRows[_j].querySelector('.js-rubric-item-delete');
             if (deleteButton) {
                 deleteButton.click();
                 rubricItemRows = rubricItemBody.querySelectorAll('tr');
@@ -216,11 +216,11 @@
         for (let i = 0; i < rubricItemData.length; i++) {
             addRubricItemButton.click();
         }
-        rubricItemRows = rubricItemBody.querySelectorAll('tr'); 
+        rubricItemRows = rubricItemBody.querySelectorAll('tr');
         _j = 0;
-        for (let i = 0; i < rubricItemRows.length; i++) { 
+        for (let i = 0; i < rubricItemRows.length; i++) {
             let rubricItem = rubricItemData[_j];
-            let rubricItemCells = rubricItemRows[i].querySelectorAll('td'); 
+            let rubricItemCells = rubricItemRows[i].querySelectorAll('td');
             if (rubricItemCells.length < 6) {
                 continue;
             }
@@ -372,12 +372,12 @@
         console.log(questionName);
         return questionName;
     }
+    let mainContent = document.getElementById("content");
+    let sideBar = mainContent.querySelector(".col-lg-4.col-12");
+    let cardHeader = sideBar.querySelector(".card-header.bg-info.text-white");
     function appendGradedInstanceCounter(questionName, gradedInstanceCounter, totalInstances) {
         console.log("appendGradedInstanceCounter");
         // look at document for the div with class "card-header bg-info text-white"
-        let mainContent = document.getElementById("content");
-        let sideBar = mainContent.querySelector(".col-lg-4.col-12");
-        let cardHeader = sideBar.querySelector(".card-header.bg-info.text-white");
         // create a new div with class "text-white"
         let div = document.createElement("div");
         div.classList.add("text-white");
@@ -404,4 +404,161 @@
         });
     })
 
+    // comment templates
+    function createCommentTemplateBox() {
+        let gradingForm = sideBar.querySelector("form[name='manual-grading-form']");
+        let _ = gradingForm.querySelector("li.form-group.list-group-item");
+        if (!_) {
+            return 1;
+        }
+        let feedBackList = _.querySelector("label");
+        let help = document.getElementById("submission-feedback-help-main");
+        // create a new div and insert it before the help
+        let commentTemplates = document.createElement("div");
+        // the div has a rounded border
+        commentTemplates.style.border = "1px solid #d1d5da";
+        commentTemplates.style.borderRadius = "3px";
+        commentTemplates.style.padding = "10px";
+        // the div has a title: "Comment Templates"
+        let title = document.createElement("h6");
+        title.innerHTML = "Comment Templates";
+        commentTemplates.appendChild(title);
+        // create a separator
+        let separator = document.createElement("hr");
+        commentTemplates.appendChild(separator);
+
+        feedBackList.insertBefore(commentTemplates, help);
+        // commentTemplates consists of a list. Each element has two buttons: one shows the comment, the other deletes the comment
+        let commentList = document.createElement("ul");
+        commentTemplates.appendChild(commentList);
+        // get the template from the local storage
+        let commentTemplateList = localStorage.getItem("commentTemplates");
+        if (commentTemplateList) {
+            commentTemplateList = JSON.parse(commentTemplateList);
+        } else {
+            commentTemplateList = [];
+        }
+        function setCommentButtonStyle(button) {
+            button.style.border = "1px solid #d1d5da";
+            button.style.borderRadius = "3px";
+            // the button has a pale blue background
+            button.style.backgroundColor = "#f1f8ff";
+            // the button has a margin
+            button.style.margin = "1px";
+            button.style.display = "inline-block";
+            button.style.cursor = "pointer";
+        }
+        function createCommentTemplateItem(comment) {
+            let li = document.createElement("li");
+            // don't show the bullet point
+            li.style.listStyleType = "none";
+            // ignore the indentation by ul
+            li.style.marginLeft = "-40px";
+            let label = document.createElement("div");
+            label.style.display = "inline-block";
+            label.innerHTML = comment;
+            label.style.margin = "1px";
+            label.style.border = "1px solid #d1d5da";
+
+            let deleteButton = document.createElement("div");
+            deleteButton.innerHTML = "Delete";
+            setCommentButtonStyle(deleteButton);
+            // the delete button is aligned to the right
+            deleteButton.style.float = "right";
+
+            let dummy = document.createElement("div");
+            dummy.appendChild(label);
+            dummy.appendChild(deleteButton);
+            li.appendChild(dummy);
+            // get the index of li
+            let index = commentList.children.length;
+            // if the index is even, the background is pale gray
+            if (index % 2 === 0) {
+                li.style.backgroundColor = "#f5f5f5";
+            }
+            // if mouse hovers over the li, the background becomes pale blue
+            li.addEventListener('mouseover', function () {
+                li.style.backgroundColor = "#e1e8ff";
+            }
+            );
+            li.addEventListener('mouseout', function () {
+                if (index % 2 === 0) {
+                    li.style.backgroundColor = "#f5f5f5";
+                } else {
+                    li.style.backgroundColor = "white";
+                }
+            });
+            commentList.appendChild(li);
+            li.addEventListener('click', function () {
+                let commentBox = feedBackList.querySelector("textarea.form-control.js-submission-feedback");
+                // insert the comment to the comment box where the cursor is
+                let cursorPosition = commentBox.selectionStart;
+                let textBefore = commentBox.value.substring(0, cursorPosition);
+                let textAfter = commentBox.value.substring(commentBox.selectionEnd, commentBox.value.length);
+                // if the comment contains "[cursor]", remember the position and remove it
+                let offset = comment.indexOf("[cursor]");
+                if (offset !== -1) {
+                    comment = comment.replace("[cursor]", "");
+                }
+                else {
+                    offset = comment.length;
+                }
+                commentBox.value = textBefore + comment + textAfter;
+
+                // move the cursor to the end of the inserted comment
+                commentBox.selectionStart = cursorPosition + offset;
+                commentBox.selectionEnd = cursorPosition + offset;
+
+            });
+            deleteButton.addEventListener('click', function (e) {
+                commentList.removeChild(li);
+                commentTemplateList.splice(commentTemplateList.indexOf(comment), 1);
+                localStorage.setItem("commentTemplates", JSON.stringify(commentTemplateList));
+                e.stopPropagation();
+            });
+        }
+
+        for (let i = 0; i < commentTemplateList.length; i++) {
+            let comment = commentTemplateList[i];
+            createCommentTemplateItem(comment);
+        }
+        // create a new button to add a new comment
+        let newCommentDiv = document.createElement("div");
+        let newCommentTextArea = document.createElement("textarea");
+        let newCommentButton = document.createElement("div");
+        newCommentButton.innerHTML = "add";
+        setCommentButtonStyle(newCommentButton);
+        newCommentButton.style.float = "right";
+
+        newCommentTextArea.style.display = "inline-block";
+        // the text area has the same height as the newcommentbutton
+        newCommentTextArea.style.height = "30px";
+        newCommentTextArea.style.width = "80%";
+        newCommentDiv.style.marginTop = "10px";
+
+        newCommentDiv.appendChild(newCommentTextArea);
+        newCommentDiv.appendChild(newCommentButton);
+        commentTemplates.appendChild(newCommentDiv);
+        newCommentButton.addEventListener('click', function () {
+            let comment = newCommentTextArea.value;
+            commentTemplateList.push(comment);
+            localStorage.setItem("commentTemplates", JSON.stringify(commentTemplateList));
+            createCommentTemplateItem(comment);
+            // clear the text area
+            newCommentTextArea.value = "";
+        });
+        return 0;
+    }
+    // frequently check if the grading form is loaded using async method
+    async function checkGradingForm() {
+        if (createCommentTemplateBox()) {
+            setTimeout(checkGradingForm, 10);
+            console.log("retrying");
+        }
+        else {
+            console.log("done");
+        }
+
+    }
+    checkGradingForm();
 })();
