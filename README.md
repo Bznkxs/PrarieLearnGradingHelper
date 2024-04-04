@@ -7,4 +7,4 @@ The script speaks for itself.
 ## Known issues
 
 - Buttons disappear after Save button is clicked.
-- Cannot correctly identify option boxes (temporarily ignored)
+- Cannot correctly identify option boxes (temporarily ignored).
