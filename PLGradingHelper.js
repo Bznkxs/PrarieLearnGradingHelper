@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PLGradingHelper
 // @namespace    http://tampermonkey.net/
-// @version      2024-02-15
+// @version      2024-04-04
 // @description  Usage: This script makes copying rubrics easier. Navigate to the grading page containing your desired rubric. In the Rubric dialog, click on "Copy Rubric" to copy the rubric. Navigate to the grading page where you wish to apply the rubric. In the Rubric dialog, press "Ctrl+V" to paste the rubric. Don't forget to click "Save rubric".
 // @author       Yufeng Du
 // @match        https://us.prairielearn.com/pl/course_instance/*/instructor/assessment/*/manual_grading/instance_question/*
@@ -144,16 +144,19 @@
         // check the validity of the parsed data
         if (checkboxValues !== 1 && checkboxValues !== 2) {
             console.log("Invalid checkboxValues: " + checkboxValues);
-            return false;
+            checkboxValues = 2;  // default to positive grading
+            // return false;
         }
         // check if minPoints and maxExtraPoints are integers
         if (isNaN(minPoints)) {
             console.log("Invalid minPoints: " + minPoints);
-            return false;
+            minPoints = 0;  // default
+            // return false;
         }
         if (isNaN(maxExtraPoints)) {
             console.log("Invalid maxExtraPoints: " + maxExtraPoints);
-            return false;
+            maxExtraPoints = 0; // default
+            // return false;
         }
         // check each rubric item
         for (let i = 0; i < rubricItemData.length; i++) {
